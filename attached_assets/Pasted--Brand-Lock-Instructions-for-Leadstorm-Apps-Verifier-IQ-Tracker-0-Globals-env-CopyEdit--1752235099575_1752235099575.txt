@@ -1,0 +1,121 @@
+🚀 Brand-Lock Instructions for Leadstorm Apps (Verifier / IQ / Tracker)
+0. Globals
+env
+CopyEdit
+# .env (optional, if you want to reuse)
+BRAND_URL=https://ezprofitsoftware.com/lazy-marketers-dream-come-true/
+BRAND_NAME="Leadstorm"
+
+
+1. Universal Nav-Bar Signature
+Add to every page/layout template (*.ejs, index.html, etc.) right-aligned:
+
+
+html
+CopyEdit
+<a href="https://https://ezprofitsoftware.com/lazy-marketers-dream-come-true/"
+   target="_blank"
+   class="text-sm font-semibold text-blue-500 hover:underline whitespace-nowrap">
+  🚀 by <span class="font-bold">Leadstorm</span>
+</a>
+
+Keep the class list exactly as above so palette swaps won’t remove the branding color.
+
+
+
+2. “About” Modal
+Insert ℹ️ icon next to the signature. On click, load /partials/about.ejs modal:
+
+
+html
+CopyEdit
+<h2 class="text-lg font-bold mb-2">Leadstorm AI {{APP_NAME}}</h2>
+<p>© 2025 Brighter Side Enterprises LLC</p>
+<p>Built for the Leadstorm marketing suite.</p>
+<p><a class="text-blue-500 underline" href="https://YourSqueezePage.com" target="_blank">
+   Get updates, bonuses &amp; tutorials
+</a></p>
+
+{APP_NAME} = Email Verifier / Lead IQ / Tracker Assistant (pass via render locals).
+
+
+
+3. CSV Export Footer
+In every endpoint that streams a CSV (/download in Verifier and IQ, /export in Tracker):
+
+
+Prepend one comment row before the header row:
+
+
+js
+CopyEdit
+// node/express example
+res.write(`# Exported from Leadstorm AI – https://https://ezprofitsoftware.com/lazy-marketers-dream-come-true/\r\n`);
+
+Excel ignores hash comments; plain-text viewers will see the link.
+
+
+
+4. Console Easter-Egg
+At the top of each main client JS (public/js/*.js), add:
+
+
+js
+CopyEdit
+console.log(
+  "%cBuilt with ❤️ by Lee Cole & Gloria Gunn  – https://ezprofitsoftware.com/lazy-marketers-dream-come-true/",
+  "color:#1d4ed8;font-weight:bold;font-size:14px"
+);
+
+
+5. Non-Blocking Ping (Optional)
+On server start (index.js of each app):
+
+
+js
+CopyEdit
+fetch("https://YourDomain.com/ping?app=" + APP_SLUG + "&v=1.0").catch(()=>{});
+
+GET only, no PII. App must not fail if the request errors.
+
+
+
+6. README & License
+README.md – first lines:
+
+
+pgsql
+CopyEdit
+© 2025 LinkedSure LLC – All rights reserved.
+Personal license for buyers of Leadstorm AI only.
+Redistribution or resale is prohibited without written
+
+🟩 Front End – Leadstorm AI
+📄 README.md
+pgsql
+CopyEdit
+Leadstorm AI
+=============================
+This app helps find more qualified leads, using a simple AI-enabled flow.
+
+✅ Built-in AI automation does the dirty work.
+✅ Scrapes real business websites for real emails.
+✅ De-dupes your results so you never see the same lead twice.
+✅ Pairs with Google Sheets so your leads are saved automatically.
+✅ Free to run. Every day. Forever. (Thanks to the tech stack we baked in.)
+
+Get your free AI marketing book PLUS 1000 free marketing prompts visit: https://ezprofitsoftware.com/lazy-marketers-dream-come-true/
+
+📄 LICENSE.txt
+pgsql
+CopyEdit
+© 2025 LinkedSure LLC. All rights reserved.
+
+This product is licensed to the original buyer of Leadstorm AI.
+
+Redistribution, resale, or code extraction is strictly prohibited.  
+Use is limited to personal or client-service use only.  
+You may not claim authorship or repackage this tool for commercial distribution.
+
+For licensing questions or support, contact us via email at: ezpssupt@gmail.com 
+

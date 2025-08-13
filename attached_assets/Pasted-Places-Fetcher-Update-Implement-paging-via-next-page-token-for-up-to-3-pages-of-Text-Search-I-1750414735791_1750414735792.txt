@@ -1,0 +1,82 @@
+Places Fetcher Update
+– Implement paging via next_page_token for up to 3 pages of Text Search.
+– If raw hits < 50, fall back to one Nearby Search (25 km radius) at city center, also paged.
+– De-duplicate on place_id before returning.
+– All delays, retries, and page counts should be driven by config.
+
+Updated places.js Snippet with Paging & Nearby Search
+
+// places.js
+const axios = require('axios');
+const { GOOGLE_PLACES_KEY } = require('./config');
+
+// Text Search with up to 3 pages
+async function textSearch(city, keyword) {
+  const all = [];
+  let token = null;
+  for (let i = 0; i < 3; i++) {
+    const params = token
+      ? `pagetoken=${token}&key=${GOOGLE_PLACES_KEY}`
+      : `query=${encodeURIComponent(keyword+' in '+city)}&key=${GOOGLE_PLACES_KEY}`;
+    const { data } = await axios.get(
+      `https://maps.googleapis.com/maps/api/place/textsearch/json?${params}`
+    );
+    all.push(...data.results);
+    if (!data.next_page_token) break;
+    token = data.next_page_token;
+    await new Promise(r => setTimeout(r, 2000));  // must wait before next_page_token
+  }
+  return all;
+}
+
+// Nearby Search with paging
+async function nearbySearch(lat, lng, radius, type) {
+  const all = [];
+  let token = null;
+  for (let i = 0; i < 3; i++) {
+    const base = `location=${lat},${lng}&radius=${radius}&type=${type}&key=${GOOGLE_PLACES_KEY}`;
+    const url = token
+      ? `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${token}&key=${GOOGLE_PLACES_KEY}`
+      : `https://maps.googleapis.com/maps/api/place/nearbysearch/json?${base}`;
+    const { data } = await axios.get(url);
+    all.push(...data.results);
+    if (!data.next_page_token) break;
+    token = data.next_page_token;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  return all;
+}
+
+// Wrapper that combines Text + Nearby + optional grid
+async function fetchPlaces(city, keyword) {
+  let results = await textSearch(city, keyword);
+
+  // If fewer than, say, 50 raw results, try nearby on city center
+  if (results.length < 50) {
+    // You can hardcode or geocode Dallas coords; for generic use, 
+    // you may add a map of city→coords in config.js
+    const { lat, lng } = await geocodeCity(city);  
+    results = results.concat(await nearbySearch(lat, lng, 25000, keyword));
+  }
+
+  // Optional: subdivide into a 3×3 grid (we can leave for later)
+  // De-duplicate by place_id
+  const unique = {};
+  for (const r of results) unique[r.place_id] = r;
+  return Object.values(unique);
+}
+
+module.exports = { fetchPlaces };
+
+2. New Config Options in config.js
+js
+CopyEdit
+module.exports = {
+  GOOGLE_PLACES_KEY: process.env.GOOGLE_PLACES_KEY,
+  CITY: process.env.CITY,
+  KEYWORD: process.env.KEYWORD,
+  DAILY_CAP: parseInt(process.env.DAILY_CAP || '50', 10),
+  REQUEST_DELAY_MS: parseInt(process.env.REQUEST_DELAY_MS || '1000', 10),
+  // (Optional) COORDS_MAP = { "Dallas TX": {lat: 32.7767, lng: -96.7970}, … }
+};
+

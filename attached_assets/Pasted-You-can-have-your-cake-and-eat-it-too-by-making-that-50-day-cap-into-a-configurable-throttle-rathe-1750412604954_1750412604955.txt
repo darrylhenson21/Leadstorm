@@ -1,0 +1,66 @@
+You can have your cake and eat it too by making that “50-day cap” into a configurable throttle rather than a hard-coded stop-point—while also building in polite rate-limiting so you never need proxies. Here’s the blueprint:
+
+1. Make the Cap Configurable
+Environment / UI setting
+
+Replace the constant DAILY_CAP = 50 in your config with something like:
+
+js
+Copy
+Edit
+DAILY_CAP = parseInt(process.env.DAILY_CAP || '50', 10);
+In your Configuration Screen, expose a field “Max email leads per run” defaulting to 50. That writes back into a local config or Secrets override.
+
+Run logic
+
+Your loop stays if (added >= DAILY_CAP) break; but now DAILY_CAP can be set to 25, 100, or even left blank (for “no cap”).
+
+2. Polite Rate-Limiting to Avoid Proxies
+Even if you crank the cap up, you won’t hit blocking as long as you behave like a normal browser:
+
+Inter-request delay
+
+js
+Copy
+Edit
+// in your leadJob loop
+await sleep(config.REQUEST_DELAY_MS || 1000);
+Where REQUEST_DELAY_MS is also configurable (e.g. 500–2000 ms).
+
+Rotate User-Agent
+Keep a small list of common UA strings and pick one at random per request. That thwarts basic bot filters.
+
+Retry & Back-off on 429/5xx
+
+js
+Copy
+Edit
+for (let attempt=1; attempt<=3; attempt++) {
+  try { return await axios.get(url); }
+  catch(err) {
+    if (err.response?.status===429) await sleep(1000 * attempt);
+    else throw err;
+  }
+}
+Optional “time-box” instead of cap
+Instead of “stop after N leads,” you could “run for up to X minutes” so you naturally throttle if you hit heavy blocks.
+
+3. Putting It All Together
+Configurable settings in your UI (or .env):
+
+DAILY_CAP (default 50)
+
+REQUEST_DELAY_MS (default 1000 ms)
+
+LeadJob loop respects those values.
+
+No hard-coding → buyers can lower or raise their cap without touching code.
+
+Built-in politeness → nary a proxy in sight.
+
+TL;DR
+Pull your cap out of code and into a setting.
+
+Throttle every HTTP call with a small delay + UA rotation + retry/back-off.
+
+Result: you can confidently bump “Max Leads/Day” up (or down) and never trip a proxy-worthy block.
